@@ -3,8 +3,10 @@ from pygame.draw import *
 from random import randint
 pygame.init()
 
-FPS = 2
-screen = pygame.display.set_mode((900, 600))
+FPS = 5
+X_SIZE = 900
+Y_SIZE = 600
+screen = pygame.display.set_mode((X_SIZE, Y_SIZE))
 
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -14,18 +16,19 @@ MAGENTA = (255, 0, 255)
 CYAN = (0, 255, 255)
 BLACK = (0, 0, 0)
 COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
-balls = [] #массив координат шариков
+balls = [] #массив параметров шариков
 N = 0 #количество очков
 
 def new_ball():
     '''рисует новый шарик и возвращает его координаты и цвет'''
-    global x, y, r
     x = randint(100, 800)
     y = randint(100, 500)
     r = randint(10, 100)
+    Vx = randint(-10, 10)
+    Vy = randint(-10, 10)
     color = COLORS[randint(0, 5)]
     circle(screen, color, (x, y), r)
-    return (x, y, r), color
+    return [x, y, r], color, [Vx, Vy]
 
 def mouse_xy(event):
     '''Возвращает координаты мыши'''
@@ -37,10 +40,32 @@ def draw_ball(params):
     '''
     Рисует шарик по его параметрам (цвет, x, y, r)
     '''
-    color = balls[i][1]
-    (X, Y) = (balls[i][0][0], balls[i][0][1])
-    r = balls[i][0][2]
+    color = params[1]
+    (X, Y) = (params[0][0], params[0][1])
+    r = params[0][2]
     circle(screen, color, (X, Y), r)
+
+def move_ball(params, i):
+    '''Двигает шарики'''
+    (X, Y) = (params[0][0], params[0][1])
+    (Vx, Vy) = (params[2][0], params[2][1])
+    r = params[0][2]
+    X += Vx
+    Y += Vy
+
+    if X>X_SIZE-r or X<r:
+        Vx = -Vx
+
+    if Y>Y_SIZE-r or Y<r:
+        Vy = -Vy
+
+    balls[i][0][0] = X
+    balls[i][0][1] = Y
+    balls[i][2][0] = Vx
+    balls[i][2][1] = Vy
+
+
+
 
 def check_click(xyr, xy):
     '''
@@ -65,9 +90,6 @@ while not finished:
             finished = True
             print(N)
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            #print(check_click(balls[len(balls)-1], mouse_xy(event)))
-            #print(balls[len(balls)-1])
-            #print(mouse_xy(event))
             i = 0
             while i < len(balls):
                 if check_click(balls[i][0], mouse_xy(event)):
@@ -75,12 +97,13 @@ while not finished:
                     print(N)
                     balls.pop(i)
                 i += 1
-    #balls = []
-    for i in range(1):
+
+    if len(balls) < 10:
         balls.append(new_ball())
     pygame.display.update()
     screen.fill(BLACK)
     for i in range(len(balls)):
+        move_ball(balls[i], i)
         draw_ball(balls[i])
 
 
