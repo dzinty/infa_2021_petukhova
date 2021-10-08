@@ -14,10 +14,11 @@ MAGENTA = (255, 0, 255)
 CYAN = (0, 255, 255)
 BLACK = (0, 0, 0)
 COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
-
+balls = [] #массив координат шариков
+N = 0 #количество очков
 
 def new_ball():
-    '''рисует новый шарик '''
+    '''рисует новый шарик и возвращает его координаты'''
     global x, y, r
     x = randint(100, 800)
     y = randint(100, 500)
@@ -26,12 +27,6 @@ def new_ball():
     circle(screen, color, (x, y), r)
     return x, y, r
 
-
-def click(event):
-    '''возвращает координаты круга, существующего на момент клика мышкой'''
-    return x, y, r
-
-
 def mouse_xy(event):
     '''Возвращает координаты мыши'''
     X = event.pos[0]
@@ -39,13 +34,13 @@ def mouse_xy(event):
     return X, Y
 
 
-def check_click(event, xy):
+def check_click(xyr, xy):
     '''
-    :param event:
+    :param xyr: Тройка координат и радиуса шарика (x, y, r)
     :param xy: Пара координат мыши (x, y)
     :return: Возвращает True если попасть по шарику кликом и False если не попасть
     '''
-    if (xy[0]-x)**2+(xy[1]-y)**2 <= r**2:
+    if (xy[0]-xyr[0])**2 + (xy[1]-xyr[1])**2 <= xyr[2]**2:
         return True
     else:
         return False
@@ -53,7 +48,7 @@ def check_click(event, xy):
 pygame.display.update()
 clock = pygame.time.Clock()
 finished = False
-N = 0 #количество очков
+
 
 while not finished:
     clock.tick(FPS)
@@ -62,15 +57,18 @@ while not finished:
             finished = True
             print(N)
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            print('Click!')
-            click(event)
-            print(check_click(event, mouse_xy(event)))
-            print(event.pos)
-            if(check_click(event, mouse_xy(event))):
-                N += 1
-                print(N)
-    new_ball()
+            #print(check_click(balls[len(balls)-1], mouse_xy(event)))
+            #print(balls[len(balls)-1])
+            #print(mouse_xy(event))
+            for i in range(len(balls)):
+                if check_click(balls[i], mouse_xy(event)):
+                    N += 1
+                    print(N)
+    balls = []
+    for i in range(5):
+        balls.append(new_ball())
     pygame.display.update()
     screen.fill(BLACK)
+
 
 pygame.quit()
