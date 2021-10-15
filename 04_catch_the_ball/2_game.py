@@ -3,7 +3,7 @@ from pygame.draw import *
 from random import randint
 pygame.init()
 
-FPS = 5
+FPS = 30
 X_SIZE = 900
 Y_SIZE = 600
 screen = pygame.display.set_mode((X_SIZE, Y_SIZE))
@@ -21,8 +21,8 @@ N = 0 #количество очков
 
 def new_ball():
     '''рисует новый шарик и возвращает его координаты и цвет'''
-    x = randint(100, 800)
-    y = randint(100, 500)
+    x = randint(100, X_SIZE-100)
+    y = randint(100, Y_SIZE-100)
     r = randint(10, 100)
     Vx = randint(-10, 10)
     Vy = randint(-10, 10)
@@ -65,9 +65,7 @@ def move_ball(params, i):
     balls[i][2][1] = Vy
 
 
-
-
-def check_click(xyr, xy):
+def check_click_ball(xyr, xy):
     '''
     :param xyr: Тройка координат и радиуса шарика (x, y, r)
     :param xy: Пара координат мыши (x, y)
@@ -78,10 +76,55 @@ def check_click(xyr, xy):
     else:
         return False
 
+def new_square():
+    '''Создает новый квадрат и сохраняет его координатыцвет и размер
+    x,y - координаты центра квадрата
+    r - длина стороны
+    '''
+    x = randint(100, X_SIZE-100)
+    y = randint(100, Y_SIZE-100)
+    r = randint(50, 100)
+    color = COLORS[randint(0, 5)]
+    return color, x, y, r
+
+def draw_square(x, y, r, color):
+    '''
+    Рисует квадрат и его отражения
+    :param x: координата центра квадрата по x
+    :param y: координата центра квадрата по y
+    :param r: длина стороны квадрата
+    :param color: цвет квадрата в формате (R, G, B)
+    :return:
+    '''
+    rect(screen, color, (x - r / 2, y - r / 2, r, r))
+    rect(screen, color, (X_SIZE - x - r / 2, y - r / 2, r, r))
+    rect(screen, color, (x - r / 2, Y_SIZE - y + r / 2, r, r))
+    rect(screen, color, (X_SIZE - x - r / 2, Y_SIZE - y + r / 2, r, r))
+
+def check_click_square(x, y, r, xy):
+    '''
+
+    :param x: координата центра квадрата по x
+    :param y: координата центра квадрата по y
+    :param r: длина стороны квадрата
+    :param xy: Пара координат мыши (x, y)
+    :return:
+    '''
+    if (xy[0]>x-r/2) and (xy[0]<x+r/2) and (xy[1]<y+r/2) and (xy[1]>y-r/2):
+        return True
+    else:
+        return False
+
+
 pygame.display.update()
 clock = pygame.time.Clock()
 finished = False
 
+time = 0
+game_time = 1000
+
+alive = True
+color, x, y, r = new_square()
 
 while not finished:
     clock.tick(FPS)
@@ -92,19 +135,37 @@ while not finished:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             i = 0
             while i < len(balls):
-                if check_click(balls[i][0], mouse_xy(event)):
+                if check_click_ball(balls[i][0], mouse_xy(event)):
                     N += 1
                     print(N)
                     balls.pop(i)
                 i += 1
+            if check_click_square(x, y, r, mouse_xy(event)):
+                N += 5
+                print(N)
+                alive = False
 
     if len(balls) < 10:
         balls.append(new_ball())
+
+    if alive:
+        r -= 2
+    else:
+        color, x, y, r = new_square()
+        alive = True
+    if r<=0:
+        alive = False
+
+    draw_square(x, y, r, color)
     pygame.display.update()
     screen.fill(BLACK)
     for i in range(len(balls)):
         move_ball(balls[i], i)
         draw_ball(balls[i])
+    time += 1
+    if time > game_time:
+        finished = True
+        print('Total score:', N)
 
 
 pygame.quit()
