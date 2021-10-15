@@ -19,6 +19,13 @@ COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 balls = [] #массив параметров шариков
 N = 0 #количество очков
 
+
+data = open('table.txt', 'r')
+table_old = data.read()
+data.close()
+
+
+
 def new_ball():
     '''рисует новый шарик и возвращает его координаты и цвет'''
     x = randint(100, X_SIZE-100)
@@ -121,10 +128,12 @@ clock = pygame.time.Clock()
 finished = False
 
 time = 0
-game_time = 1000
+game_time = 500
 
 alive = True
 color, x, y, r = new_square()
+
+name = input('Введите имя игрока:')
 
 while not finished:
     clock.tick(FPS)
@@ -167,5 +176,9 @@ while not finished:
         finished = True
         print('Total score:', N)
 
+table = open('table.txt', 'w')
+print(table_old, file=table)
+print(name, N, file=table)
+table.close()
 
 pygame.quit()
