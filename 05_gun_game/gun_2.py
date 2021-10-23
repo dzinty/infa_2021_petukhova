@@ -139,6 +139,8 @@ class Gun:
         self.color = GREY
         self.x = 200
         self.y = 450
+        self.vx = 0
+        self.vy = 0
         self.width = 5
 
     def fire2_start(self, event):
@@ -200,18 +202,22 @@ class Gun:
         else:
             self.color = GREY
 
-    '''
-    Движение пушки
+
     def move(self):
-        if event.type == pygame.KEYDOWN:
-            if pygame.key.get_pressed()[pygame.K_w]:
-                self.y -= 1
-            if pygame.key.get_pressed()[pygame.K_s]:
-                self.y += 1
-            if pygame.key.get_pressed()[pygame.K_d]:
-                self.x += 1
-            if pygame.key.get_pressed()[pygame.K_a]:
-                self.x -= 1'''
+        if self.x < 10:
+            self.vx = 0
+            self.x = 10
+        elif self.x > WIDTH-10:
+            self.vx = 0
+            self.x = WIDTH-10
+        self.x += self.vx
+        if self.y < 10:
+            self.y = 10
+            self.vy = 0
+        elif self.y > HEIGHT - 10:
+            self.y = HEIGHT-10
+            self.vy = 0
+        self.y += self.vy
 
 
 class Target:
@@ -272,6 +278,7 @@ bullet_type = 1
 
 while not finished:
     screen.fill(WHITE)
+    gun.move()
     gun.draw()
     for target in targets:
         target.draw()
@@ -291,6 +298,23 @@ while not finished:
 
     clock.tick(FPS)
     for event in pygame.event.get():
+
+        if event.type == pygame.KEYUP:
+            if (not pygame.key.get_pressed()[pygame.K_d]) and (not pygame.key.get_pressed()[pygame.K_a]):
+                gun.vx = 0
+            if (not pygame.key.get_pressed()[pygame.K_w]) and (not pygame.key.get_pressed()[pygame.K_s]):
+                gun.vy = 0
+        if event.type == pygame.KEYDOWN:
+            if pygame.key.get_pressed()[pygame.K_d]:
+                gun.vx = 5
+            elif pygame.key.get_pressed()[pygame.K_a]:
+                gun.vx = -5
+            if pygame.key.get_pressed()[pygame.K_w]:
+                gun.vy = -5
+            elif pygame.key.get_pressed()[pygame.K_s]:
+                gun.vy = 5
+
+
         if event.type == pygame.KEYDOWN:
             if pygame.key.get_pressed()[pygame.K_1]:
                 bullet_type = 1
