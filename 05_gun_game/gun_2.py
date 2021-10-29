@@ -37,8 +37,9 @@ class Laser:
         self.vx = 0
         self.vy = 0
         self.an = 1
+        self.r = 3
         self.color = choice(GAME_COLORS)
-        self.live = 30
+        self.live = 500
 
     def move(self):
         """Переместить лазер по прошествии единицы времени.
@@ -47,6 +48,7 @@ class Laser:
         """
         self.x += self.vx
         self.y -= self.vy
+        self.live -= 1
 
     def draw(self):
         x2 = self.x - self.width * math.sin(self.an)
@@ -293,6 +295,60 @@ class Target:
         )
         pygame.draw.circle(self.screen, BLACK, (self.x, self.y), self.r, 1)
 
+class EnemyGun:
+    def __init__(self, screen):
+        self.screen = screen
+        self.f2_power = 10
+        self.an = 1
+        self.color = RED
+        self.R = randint(100, 250)
+        self.r = 5
+        self.x = WIDTH/2
+        self.y = HEIGHT/2 - self.R
+        self.vx = 0
+        self.vy = 0
+        self.width = 5
+        self.health = 20
+        self.timer = 20
+        self.v = 3
+    def fire(self, obj, type = 1):
+        """Выстрел снарядом.
+        Начальные значения компонент скорости снаряда vx и vy зависят от положения объекта.
+        """
+        global enemy_lasers
+        new_laser = Laser(self.screen, x=self.x, y=self.y)
+        self.an = math.atan2((obj.y - new_laser.y), (obj.x - new_laser.x))
+        new_laser.an = self.an
+        new_laser.vx = self.f2_power * math.cos(self.an)
+        new_laser.vy = - self.f2_power * math.sin(self.an)
+        new_laser.length = self.f2_power
+        enemy_lasers.append(new_laser)
+        self.f2_power = 10
+
+    def targetting(self, obj):
+        """Прицеливание. Зависит от положения объекта."""
+        self.an = math.atan2((obj.y-self.y), (obj.x-self.x))
+
+    def draw(self):
+        pygame.draw.rect(self.screen, GREY, (self.x-10, self.y-10, 20, 20))
+
+        x0 = self.x + 0.5*self.width * math.sin(self.an)
+        y0 = self.y - 0.5*self.width * math.cos(self.an)
+        x2 = x0 - self.width*math.sin(self.an)
+        y2 = y0 + self.width*math.cos(self.an)
+        x1 = x0 + math.cos(self.an)*self.f2_power
+        y1 = y0 + math.sin(self.an)*self.f2_power
+        x3 = x2 + math.cos(self.an) * self.f2_power
+        y3 = y2 + math.sin(self.an) * self.f2_power
+        pygame.draw.polygon(self.screen, self.color,((x0, y0), (x1, y1), (x3, y3), (x2, y2)))
+
+
+    def move(self):
+        phi = math.atan2((-self.y+HEIGHT/2), (self.x - WIDTH/2))
+        self.vx = self.v*math.sin(phi)
+        self.vy = self.v*math.cos(phi)
+        self.x += self.vx
+        self.y += self.vy
 
 
 
@@ -301,15 +357,19 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.font.init()
 f1 = pygame.font.Font(None, 36)
+f2 = pygame.font.Font(None, 100)
 bullet = 0
 balls = []
 lasers = []
+enemy_lasers = []
 targets = []
 bombs = []
-
+enemies = []
+score_0 = 0
 
 clock = pygame.time.Clock()
 gun = Gun(screen)
+enemies.append(EnemyGun(screen))
 for i in range(2):
     targets.append(Target())
 finished = False
@@ -319,6 +379,18 @@ while not finished:
     screen.fill(WHITE)
     gun.move()
     gun.draw()
+    for enemy1 in enemies:
+        enemy1.move()
+        enemy1.targetting(gun)
+        enemy1.draw()
+        if enemy1.timer < 0:
+            enemy1.fire(gun)
+            enemy1.timer = 20
+        enemy1.timer -= 1
+        if enemy1.health < 0:
+            enemies.remove(enemy1)
+            enemies.append(EnemyGun(screen))
+            score_0 += 100
     for bomb in bombs:
         bomb.draw()
     for target in targets:
@@ -329,19 +401,33 @@ while not finished:
     for l in lasers:
         if l.live<0: lasers.remove(l)
         l.draw()
+    for l in enemy_lasers:
+        if l.live<0: enemy_lasers.remove(l)
+        l.draw()
 
-    score = 0
+    score = score_0
     for target in targets:
         score += target.points
     text1 = f1.render('Score: ' + str(score), True, (0, 0, 0))
     text2 = f1.render('HP: ' + str(gun.health), True, (0, 0, 0))
     screen.blit(text1, (10, 50))
     screen.blit(text2, (10, 10))
-    if gun.health<=0:
-        text = f1.render('GAME OVER', True, (183, 3, 3))
-        screen.blit(text, (300, 300))
+    if gun.health <= 0:
         finished = True
+        text = f2.render('GAME OVER', True, (183, 3, 3))
+        screen.fill(BLACK)
+        screen.blit(text, (200, 250))
+        pygame.display.update()
+        pygame.time.delay(2000)
     pygame.display.update()
+
+    if score > 300:
+        finished = True
+        text = f2.render('YOU WIN', True, (102, 255, 3))
+        screen.blit(text, (200, 250))
+        pygame.display.update()
+        pygame.time.delay(2000)
+
 
     clock.tick(FPS)
     for event in pygame.event.get():
@@ -392,6 +478,11 @@ while not finished:
                 target.live = 0
                 target.hit()
                 target.new_target()
+        for enemy in enemies:
+            if b.hittest(enemy):
+                enemy.health -= 1
+
+
 
     for l in lasers:
         l.move()
@@ -400,6 +491,16 @@ while not finished:
                 target.live = 0
                 target.hit()
                 target.new_target()
+        for enemy in enemies:
+            if l.hittest(enemy):
+                enemy.health -= 1
+
+
+    for l in enemy_lasers:
+        l.move()
+        if gun.hittest(l):
+            enemy_lasers.remove(l)
+            gun.health -= 1
 
     for b in bombs:
         if gun.hittest(b):
@@ -407,5 +508,8 @@ while not finished:
             gun.health -= 1
 
     gun.power_up()
+
+
+
 
 pygame.quit()
