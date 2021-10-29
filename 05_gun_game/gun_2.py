@@ -63,9 +63,9 @@ class Laser:
         Args:
             obj: Обьект, с которым проверяется столкновение.
         Returns:
-            Возвращает True в случае столкновения мяча и цели. В противном случае возвращает False.
+            Возвращает True в случае столкновения лазера и цели. В противном случае возвращает False.
         """
-        if (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 <= (obj.r) ** 2:
+        if (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 <= obj.r ** 2:
             return True
         else:
             return False
@@ -130,6 +130,28 @@ class Ball:
             return False
 
 
+class Bomb:
+    def __init__(self, screen: pygame.Surface, x=40, y=450):
+        """ Конструктор класса bomb
+
+        Args:
+        x - положение бомбы по горизонтали
+        y - положение бомбы по вертикали
+        """
+        self.screen = screen
+        self.x = x
+        self.y = y
+        self.r = 5
+        self.color = BLACK
+
+    def draw(self):
+        pygame.draw.circle(
+            self.screen,
+            self.color,
+            (self.x, self.y),
+            self.r
+        )
+
 class Gun:
     def __init__(self, screen):
         self.screen = screen
@@ -142,6 +164,7 @@ class Gun:
         self.vx = 0
         self.vy = 0
         self.width = 5
+        self.health = 20
 
     def fire2_start(self, event):
         self.f2_on = 1
@@ -219,6 +242,18 @@ class Gun:
             self.vy = 0
         self.y += self.vy
 
+    def hittest(self, obj):
+        """Функция проверяет сталкивалкивается ли данный обьект с целью, описываемой в обьекте obj.
+
+        Args:
+            obj: Обьект, с которым проверяется столкновение.
+        Returns:
+            Возвращает True в случае столкновения пушки и цели. В противном случае возвращает False.
+        """
+        if (self.x - obj.x) ** 2 + (self.y - obj.y) ** 2 <= (5+obj.r) ** 2:
+            return True
+        else:
+            return False
 
 class Target:
     def __init__(self):
@@ -226,6 +261,7 @@ class Target:
         self.points = 0
         self.live = 1
         self.new_target()
+        self.timer = randint(50, 100)
 
     def new_target(self):
         """ Инициализация новой цели. """
@@ -259,6 +295,8 @@ class Target:
 
 
 
+
+
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.font.init()
@@ -267,6 +305,7 @@ bullet = 0
 balls = []
 lasers = []
 targets = []
+bombs = []
 
 
 clock = pygame.time.Clock()
@@ -280,6 +319,8 @@ while not finished:
     screen.fill(WHITE)
     gun.move()
     gun.draw()
+    for bomb in bombs:
+        bomb.draw()
     for target in targets:
         target.draw()
     for b in balls:
@@ -293,7 +334,13 @@ while not finished:
     for target in targets:
         score += target.points
     text1 = f1.render('Score: ' + str(score), True, (0, 0, 0))
+    text2 = f1.render('HP: ' + str(gun.health), True, (0, 0, 0))
     screen.blit(text1, (10, 50))
+    screen.blit(text2, (10, 10))
+    if gun.health<=0:
+        text = f1.render('GAME OVER', True, (183, 3, 3))
+        screen.blit(text, (300, 300))
+        finished = True
     pygame.display.update()
 
     clock.tick(FPS)
@@ -332,6 +379,10 @@ while not finished:
             gun.targetting(event)
 
     for target in targets:
+        if target.timer <= 0:
+            bombs.append(Bomb(screen, target.x, target.y))
+            target.timer = randint(50, 100)
+        target.timer -= 1
         target.move()
 
     for b in balls:
@@ -349,6 +400,11 @@ while not finished:
                 target.live = 0
                 target.hit()
                 target.new_target()
+
+    for b in bombs:
+        if gun.hittest(b):
+            bombs.remove(b)
+            gun.health -= 1
 
     gun.power_up()
 
